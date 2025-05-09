@@ -1,0 +1,22 @@
+🛠 Ferramentas Necessárias:
+
+1. Para o Bot do Telegram:
+BotFather	Cria o bot e gera o token de acesso no Telegram	@BotFather
+python-telegram-bot (ou aiogram)	Biblioteca Python para interagir com a API do Telegram	GitHub
+
+2. Para a LLM (Modelo de Linguagem):
+Google Gemini 1.5 Pro	LLM da Google (via API)	✅ Até 5 reqs/min
+
+3. Para o Banco de Dados (MongoDB):
+MongoDB Atlas	Serviço gerenciado com free tier (512MB)	✅ Free tier
+PyMongo	Biblioteca Python para conectar ao MongoDB	✅ Grátis
+
+4. Para o Backend (Conexão LLM + MongoDB):
+LangChain	Framework para integrar LLMs a bancos de dados (suporta MongoDB)
+
+5. Para Deploy Online (Hospedagem Gratuita):
+Render	Hospeda bots Python (com limite de horas)	✅ 750 hrs/mês
+
+Opcional (No-Code):
+Botpress	Criar bot sem código	Gratuito ($5 crédito)
+SendPulse	Construtor visual para Telegram	Gratuito (10.000 msgs/mês)
