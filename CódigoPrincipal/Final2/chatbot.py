@@ -17,14 +17,14 @@ st.title("Chatbot de Comércio Eletrônico")
 # Acessar as chaves do secrets.toml
 HUGGINGFACEHUB_API_TOKEN = st.secrets["HUGGINGFACEHUB_API_TOKEN"]
 LANGCHAIN_API_KEY = st.secrets["LANGCHAIN_API_KEY"]
-LANGCHAIN_TRACING_V2 = st.secrets["LANGCHAIN_TRACING_V2"]
+# LANGCHAIN_TRACING_V2 = st.secrets["LANGCHAIN_TRACING_V2"]
 
 # Definir variáveis de ambiente usando os valores do secrets
 import os
 
 os.environ["HUGGINGFACEHUB_API_TOKEN"] = HUGGINGFACEHUB_API_TOKEN
 os.environ["LANGCHAIN_API_KEY"] = LANGCHAIN_API_KEY
-os.environ["LANGCHAIN_TRACING_V2"] = LANGCHAIN_TRACING_V2
+# os.environ["LANGCHAIN_TRACING_V2"] = LANGCHAIN_TRACING_V2
 
 # Inicializar estado da sessão
 if "user_id" not in st.session_state:
