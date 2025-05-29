@@ -12,18 +12,22 @@ Original file is located at
 
 import streamlit as st
 
-# Configuração da página (primeira chamada ao Streamlit)
+# Configuração da página (primeira e única chamada ao Streamlit antes de qualquer outra interação)
 st.set_page_config(page_title="Chatbot Conecta", page_icon="🤖")
 
-import os  # Adicionado para usar os.remove
-from chatbot import QASystem, ProcessamentoDeDocumento
-from crud import autenticar_usuario, criar_pessoa, listar_pessoas, buscar_por_id, atualizar_pessoa, deletar_pessoa, atualizar_senha, validar_forca_senha, armazenar_token, cadastrar_ecommerce, listar_ecommerces, buscar_ecommerce_por_id, atualizar_ecommerce, deletar_ecommerce
+# Lazy imports to avoid side effects before set_page_config
+def initialize_components():
+    global qa_system, processor
+    import os
+    from chatbot import QASystem, ProcessamentoDeDocumento
+    from crud import autenticar_usuario, criar_pessoa, listar_pessoas, buscar_por_id, atualizar_pessoa, deletar_pessoa, atualizar_senha, validar_forca_senha, armazenar_token, cadastrar_ecommerce, listar_ecommerces, buscar_ecommerce_por_id, atualizar_ecommerce, deletar_ecommerce
+    if "qa_system" not in st.session_state:
+        st.session_state.qa_system = QASystem()
+    if "processor" not in st.session_state:
+        st.session_state.processor = ProcessamentoDeDocumento()
 
-# Inicializar o chatbot e o processador apenas quando necessário
-if "qa_system" not in st.session_state:
-    st.session_state.qa_system = QASystem()
-if "processor" not in st.session_state:
-    st.session_state.processor = ProcessamentoDeDocumento()
+# Initialize components only when needed
+initialize_components()
 
 # Abas
 tab1, tab2, tab3, tab4 = st.tabs(["Chatbot", "Gerenciar Usuários", "Gerenciar E-commerce", "Configurações"])
