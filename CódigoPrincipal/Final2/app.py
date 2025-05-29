@@ -6,37 +6,29 @@ import streamlit as st
 # Configuração da página (primeira e única chamada ao Streamlit antes de qualquer outra interação)
 st.set_page_config(page_title="Chatbot Conecta", page_icon="🤖")
 
-# Lazy imports to avoid side effects before set_page_config
-def initialize_components():
-    global qa_system, processor
-    import os
-    try:
-        from chatbot import QASystem, ProcessamentoDeDocumento
-        print("Importação de chatbot.py bem-sucedida.")  # Depuração
-    except Exception as e:
-        print(f"Erro ao importar chatbot.py: {e}")
-        raise
-
-    try:
-        from crud import autenticar_usuario, criar_pessoa, listar_pessoas, buscar_por_id, atualizar_pessoa, deletar_pessoa, atualizar_senha, validar_forca_senha, armazenar_token, cadastrar_ecommerce, listar_ecommerces, buscar_ecommerce_por_id, atualizar_ecommerce, deletar_ecommerce
-        print("Importação de crud.py bem-sucedida.")  # Depuração
-    except Exception as e:
-        print(f"Erro ao importar crud.py: {e}")
-        raise
-
-    if "qa_system" not in st.session_state:
-        st.session_state.qa_system = QASystem()
-    if "processor" not in st.session_state:
-        st.session_state.processor = ProcessamentoDeDocumento()
-
-# Initialize components only when needed
+# Importações globais
+import os
 try:
-    initialize_components()
-    print("Componentes inicializados com sucesso.")  # Depuração
+    from chatbot import QASystem, ProcessamentoDeDocumento
+    print("Importação de chatbot.py bem-sucedida.")  # Depuração
 except Exception as e:
-    print(f"Erro ao inicializar componentes: {e}")
+    print(f"Erro ao importar chatbot.py: {e}")
     st.error(f"Erro ao inicializar a aplicação: {e}")
     st.stop()
+
+try:
+    from crud import autenticar_usuario, criar_pessoa, listar_pessoas, buscar_por_id, atualizar_pessoa, deletar_pessoa, atualizar_senha, validar_forca_senha, armazenar_token, cadastrar_ecommerce, listar_ecommerces, buscar_ecommerce_por_id, atualizar_ecommerce, deletar_ecommerce
+    print("Importação de crud.py bem-sucedida.")  # Depuração
+except Exception as e:
+    print(f"Erro ao importar crud.py: {e}")
+    st.error(f"Erro ao inicializar a aplicação: {e}")
+    st.stop()
+
+# Inicializar o chatbot e o processador apenas quando necessário
+if "qa_system" not in st.session_state:
+    st.session_state.qa_system = QASystem()
+if "processor" not in st.session_state:
+    st.session_state.processor = ProcessamentoDeDocumento()
 
 # Abas
 tab1, tab2, tab3, tab4 = st.tabs(["Chatbot", "Gerenciar Usuários", "Gerenciar E-commerce", "Configurações"])
