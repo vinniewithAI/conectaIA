@@ -1,3 +1,0 @@
-HF_TOKEN=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
-MONGO_URI=mongodb+srv://conecta-ia:O1r3VIK4X35CzEfL@conecta-cluster.hgjlsdc.mongodb.net/
-LANGCHAIN_API_KEY=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
