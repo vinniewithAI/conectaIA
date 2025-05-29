@@ -50,9 +50,9 @@ with tab1:
         email_reg = st.text_input("Email (para registro)", key="reg_email")
         senha_reg = st.text_input("Senha (para registro)", type="password", key="reg_senha")
         if st.button("Registrar"):
-            #if not validar_forca_senha(senha_reg):
-            #    st.error("A senha deve ter pelo menos 8 caracteres, uma letra maiúscula e um número.")
-            #else:
+            if not validar_forca_senha(senha_reg):
+                st.error("A senha deve ter pelo menos 8 caracteres, uma letra maiúscula e um número.")
+            else:
                 user_id = criar_pessoa(nome, email_reg, senha_reg)
                 if user_id:
                     st.success("Usuário registrado com sucesso! Faça login.")
