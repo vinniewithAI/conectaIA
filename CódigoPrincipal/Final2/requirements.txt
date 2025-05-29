@@ -8,6 +8,6 @@ sentence-transformers==3.0.1
 pypdf==4.3.1
 bcrypt==4.2.0
 python-dotenv==1.0.1
-transformers==4.44.2  # Versão compatível com accelerate
-torch==2.3.0  # Versão compatível com sua configuração
-accelerate==0.25.0  # Adicionado
+transformers==4.44.2
+torch==2.3.0
+accelerate==0.30.1 

@@ -9,7 +9,8 @@ from langchain.chains import RetrievalQA
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.document_loaders import PyPDFLoader
 from langchain.prompts import PromptTemplate
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, pipeline, BitsAndBytesConfig
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, pipeline
+import os
 
 # Configuração inicial
 st.title("Chatbot de Comércio Eletrônico")
@@ -20,8 +21,6 @@ LANGCHAIN_API_KEY = st.secrets["LANGCHAIN_API_KEY"]
 LANGCHAIN_TRACING_V2 = st.secrets["LANGCHAIN_TRACING_V2"]
 
 # Definir variáveis de ambiente usando os valores do secrets
-import os
-
 os.environ["HUGGINGFACEHUB_API_TOKEN"] = HUGGINGFACEHUB_API_TOKEN
 os.environ["LANGCHAIN_API_KEY"] = LANGCHAIN_API_KEY
 os.environ["LANGCHAIN_TRACING_V2"] = LANGCHAIN_TRACING_V2
@@ -34,80 +33,72 @@ if "doc_processed" not in st.session_state:
 if "qa_system" not in st.session_state:
     st.session_state.qa_system = None
 
-# Configuração de quantização
-bnb_config = BitsAndBytesConfig(
-    load_in_8bit=True,
-    bnb_8bit_quant_type="nf4",
-    bnb_8bit_compute_dtype=torch.float16,
-    bnb_8bit_use_double_quant=True
-)
-
 # Carregar o modelo e pipeline (apenas uma vez)
 @st.cache_resource
 def load_model():
     print("Inicializando LLM...")
-    model_name = "google/flan-t5-small"
-    tokenizer = AutoTokenizer.from_pretrained(model_name, token=os.environ["HUGGINGFACEHUB_API_TOKEN"])
-
-    # Check if GPU is available
-    if torch.cuda.is_available():
-        print("GPU detectada. Usando quantização 8-bit.")
-        bnb_config = BitsAndBytesConfig(
-            load_in_8bit=True,
-            bnb_8bit_quant_type="nf4",
-            bnb_8bit_compute_dtype=torch.float16,
-            bnb_8bit_use_double_quant=True
-        )
-        model = AutoModelForSeq2SeqLM.from_pretrained(
+    try:
+        model_name = "google/flan-t5-small"
+        tokenizer = AutoTokenizer.from_pretrained(
             model_name,
-            quantization_config=bnb_config,
-            device_map="auto",  # Let transformers decide the best device
-            token=os.environ["HUGGINGFACEHUB_API_TOKEN"],
-            torch_dtype=torch.float16,
-            low_cpu_mem_usage=True
+            token=os.environ["HUGGINGFACEHUB_API_TOKEN"]
         )
-    else:
-        print("Nenhuma GPU detectada. Carregando modelo no CPU sem quantização.")
+        # Load model on CPU with float16 precision
         model = AutoModelForSeq2SeqLM.from_pretrained(
             model_name,
             device_map="cpu",
-            token=os.environ["HUGGINGFACEHUB_API_TOKEN"],
-            torch_dtype=torch.float16,  # Use float16 for reduced memory usage
-            low_cpu_mem_usage=True
+            torch_dtype=torch.float16,
+            low_cpu_mem_usage=True,
+            token=os.environ["HUGGINGFACEHUB_API_TOKEN"]
         )
-
-    pipe = pipeline(
-        "text2text-generation",
-        model=model,
-        tokenizer=tokenizer,
-        max_length=512,
-        max_new_tokens=256,
-        temperature=0.7,
-        do_sample=True,
-        truncation=True
-    )
-    llm = HuggingFacePipeline(pipeline=pipe)
-    print("LLM inicializado com sucesso.")
-    return llm
+        pipe = pipeline(
+            "text2text-generation",
+            model=model,
+            tokenizer=tokenizer,
+            max_length=512,
+            max_new_tokens=256,
+            temperature=0.7,
+            do_sample=True,
+            truncation=True
+        )
+        llm = HuggingFacePipeline(pipeline=pipe)
+        print("LLM inicializado com sucesso.")
+        return llm
+    except Exception as e:
+        print(f"Erro ao inicializar o modelo: {str(e)}")
+        st.error(f"Erro ao inicializar o modelo: {str(e)}")
+        return None
 
 # Configurar MongoDB
-client = MongoClient("mongodb+srv://conecta-ia:O1r3VIK4X35CzEfL@conecta-cluster.hgjlsdc.mongodb.net/")
-db = client["conecta"]
-
+try:
+    client = MongoClient("mongodb+srv://conecta-ia:O1r3VIK4X35CzEfL@conecta-cluster.hgjlsdc.mongodb.net/")
+    db = client["conecta"]
+except Exception as e:
+    st.error(f"Erro ao conectar ao MongoDB: {str(e)}")
+    client = None
+    db = None
 
 # Classe para processar documentos
 class ProcessamentoDeDocumento:
     def __init__(self):
-        self.embeddings = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
-            model_kwargs={'device': 'cpu'}
-        )
-        self.text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=200,
-            chunk_overlap=50
-        )
+        try:
+            self.embeddings = HuggingFaceEmbeddings(
+                model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+                model_kwargs={'device': 'cpu'}
+            )
+            self.text_splitter = RecursiveCharacterTextSplitter(
+                chunk_size=200,
+                chunk_overlap=50
+            )
+        except Exception as e:
+            st.error(f"Erro ao inicializar ProcessamentoDeDocumento: {str(e)}")
+            self.embeddings = None
+            self.text_splitter = None
 
     def process_pdf(self, file_path, user_id):
+        if not self.embeddings or not self.text_splitter:
+            st.error("Erro: Processador de documentos não inicializado corretamente.")
+            return None
         try:
             loader = PyPDFLoader(file_path)
             pages = loader.load()
@@ -132,22 +123,29 @@ class ProcessamentoDeDocumento:
             st.error(f"Erro ao processar o PDF: {str(e)}")
             return None
 
-
 # Classe para o sistema de QA
 class QASystem:
     def __init__(self, llm):
-        self.llm = llm
-        self.embeddings = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
-            model_kwargs={'device': 'cpu'}
-        )
-        self.vector_store = MongoDBAtlasVectorSearch(
-            collection=db.document_vectors,
-            embedding=self.embeddings,
-            index_name="document_search"
-        )
+        try:
+            self.llm = llm
+            self.embeddings = HuggingFaceEmbeddings(
+                model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+                model_kwargs={'device': 'cpu'}
+            )
+            self.vector_store = MongoDBAtlasVectorSearch(
+                collection=db.document_vectors,
+                embedding=self.embeddings,
+                index_name="document_search"
+            )
+        except Exception as e:
+            st.error(f"Erro ao inicializar QASystem: {str(e)}")
+            self.llm = None
+            self.vector_store = None
 
     def ask_question(self, question, user_id):
+        if not self.llm or not self.vector_store:
+            st.error("Erro: Sistema de QA não inicializado corretamente.")
+            return None
         try:
             retriever = self.vector_store.as_retriever(
                 filter={"user_id": user_id},
@@ -221,13 +219,18 @@ Resposta:"""
             st.error(f"Erro ao responder a pergunta '{question}': {str(e)}")
             return None
 
-
 # Interface do Streamlit
 llm = load_model()
+if llm is None:
+    st.error("Falha ao carregar o modelo. Verifique os logs para mais detalhes.")
+    st.stop()
 
 # Inicializar o QASystem apenas uma vez
 if st.session_state.qa_system is None:
     st.session_state.qa_system = QASystem(llm)
+    if st.session_state.qa_system is None:
+        st.error("Falha ao inicializar o sistema de QA.")
+        st.stop()
 
 # Upload do PDF
 uploaded_file = st.file_uploader("Faça upload do seu PDF", type="pdf")
@@ -244,8 +247,8 @@ if uploaded_file is not None and not st.session_state.doc_processed:
             st.session_state.doc_processed = True
             st.success("PDF processado com sucesso!")
         else:
-            st.error("Falha ao processar o PDF.")
             st.session_state.doc_processed = False
+            st.error("Falha ao processar o PDF.")
 
 # Campo de entrada para perguntas
 if st.session_state.doc_processed:
