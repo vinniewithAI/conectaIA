@@ -42,21 +42,40 @@ bnb_config = BitsAndBytesConfig(
     bnb_8bit_use_double_quant=True
 )
 
-
 # Carregar o modelo e pipeline (apenas uma vez)
 @st.cache_resource
 def load_model():
     print("Inicializando LLM...")
     model_name = "google/flan-t5-small"
     tokenizer = AutoTokenizer.from_pretrained(model_name, token=os.environ["HUGGINGFACEHUB_API_TOKEN"])
-    model = AutoModelForSeq2SeqLM.from_pretrained(
-        model_name,
-        quantization_config=bnb_config,
-        device_map="cpu",
-        token=os.environ["HUGGINGFACEHUB_API_TOKEN"],
-        torch_dtype=torch.float16,
-        low_cpu_mem_usage=True
-    )
+
+    # Check if GPU is available
+    if torch.cuda.is_available():
+        print("GPU detectada. Usando quantização 8-bit.")
+        bnb_config = BitsAndBytesConfig(
+            load_in_8bit=True,
+            bnb_8bit_quant_type="nf4",
+            bnb_8bit_compute_dtype=torch.float16,
+            bnb_8bit_use_double_quant=True
+        )
+        model = AutoModelForSeq2SeqLM.from_pretrained(
+            model_name,
+            quantization_config=bnb_config,
+            device_map="auto",  # Let transformers decide the best device
+            token=os.environ["HUGGINGFACEHUB_API_TOKEN"],
+            torch_dtype=torch.float16,
+            low_cpu_mem_usage=True
+        )
+    else:
+        print("Nenhuma GPU detectada. Carregando modelo no CPU sem quantização.")
+        model = AutoModelForSeq2SeqLM.from_pretrained(
+            model_name,
+            device_map="cpu",
+            token=os.environ["HUGGINGFACEHUB_API_TOKEN"],
+            torch_dtype=torch.float16,  # Use float16 for reduced memory usage
+            low_cpu_mem_usage=True
+        )
+
     pipe = pipeline(
         "text2text-generation",
         model=model,
@@ -70,7 +89,6 @@ def load_model():
     llm = HuggingFacePipeline(pipeline=pipe)
     print("LLM inicializado com sucesso.")
     return llm
-
 
 # Configurar MongoDB
 client = MongoClient("mongodb+srv://conecta-ia:O1r3VIK4X35CzEfL@conecta-cluster.hgjlsdc.mongodb.net/")
