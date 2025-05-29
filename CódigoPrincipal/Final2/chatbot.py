@@ -52,7 +52,7 @@ def load_model():
     model = AutoModelForSeq2SeqLM.from_pretrained(
         model_name,
         quantization_config=bnb_config,
-        device_map="cuda" if torch.cuda.is_available() else "cpu",
+        device_map="cpu",
         token=os.environ["HUGGINGFACEHUB_API_TOKEN"],
         torch_dtype=torch.float16,
         low_cpu_mem_usage=True
@@ -82,7 +82,7 @@ class ProcessamentoDeDocumento:
     def __init__(self):
         self.embeddings = HuggingFaceEmbeddings(
             model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
-            model_kwargs={'device': 'cuda' if torch.cuda.is_available() else 'cpu'}
+            model_kwargs={'device': 'cpu'}
         )
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=200,
@@ -121,7 +121,7 @@ class QASystem:
         self.llm = llm
         self.embeddings = HuggingFaceEmbeddings(
             model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
-            model_kwargs={'device': 'cuda' if torch.cuda.is_available() else 'cpu'}
+            model_kwargs={'device': 'cpu'}
         )
         self.vector_store = MongoDBAtlasVectorSearch(
             collection=db.document_vectors,
