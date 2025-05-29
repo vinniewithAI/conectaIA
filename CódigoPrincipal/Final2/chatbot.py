@@ -1,5 +1,4 @@
 import streamlit as st
-import os
 import torch
 from pymongo import MongoClient
 import gc
@@ -15,10 +14,17 @@ from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, pipeline, BitsAnd
 # Configuração inicial
 st.title("Chatbot de Comércio Eletrônico")
 
-# Definir variáveis de ambiente (substitua pelo seu token real)
-os.environ["HUGGINGFACEHUB_API_TOKEN"] = "seu_token_aqui"  # Substitua pelo seu token
-os.environ["LANGCHAIN_API_KEY"] = "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"
-os.environ["LANGCHAIN_TRACING_V2"] = "true"
+# Acessar as chaves do secrets.toml
+HUGGINGFACEHUB_API_TOKEN = st.secrets["HUGGINGFACEHUB_API_TOKEN"]
+LANGCHAIN_API_KEY = st.secrets["LANGCHAIN_API_KEY"]
+LANGCHAIN_TRACING_V2 = st.secrets["LANGCHAIN_TRACING_V2"]
+
+# Definir variáveis de ambiente usando os valores do secrets
+import os
+
+os.environ["HUGGINGFACEHUB_API_TOKEN"] = HUGGINGFACEHUB_API_TOKEN
+os.environ["LANGCHAIN_API_KEY"] = LANGCHAIN_API_KEY
+os.environ["LANGCHAIN_TRACING_V2"] = LANGCHAIN_TRACING_V2
 
 # Inicializar estado da sessão
 if "user_id" not in st.session_state:
@@ -55,8 +61,8 @@ def load_model():
         "text2text-generation",
         model=model,
         tokenizer=tokenizer,
-        max_length=512,  # Limite total de tokens (entrada + saída)
-        max_new_tokens=256,  # Reduzido para deixar espaço para a entrada
+        max_length=512,
+        max_new_tokens=256,
         temperature=0.7,
         do_sample=True,
         truncation=True
@@ -79,7 +85,7 @@ class ProcessamentoDeDocumento:
             model_kwargs={'device': 'cuda' if torch.cuda.is_available() else 'cpu'}
         )
         self.text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=200,  # Reduzido para evitar sequência longa
+            chunk_size=200,
             chunk_overlap=50
         )
 
@@ -127,7 +133,7 @@ class QASystem:
         try:
             retriever = self.vector_store.as_retriever(
                 filter={"user_id": user_id},
-                search_kwargs={"k": 3}  # Reduzido para evitar sequência longa
+                search_kwargs={"k": 3}
             )
             template = """Com base no contexto, responda em português de forma clara e concisa.
 Se não encontrar a resposta, diga: "Não consegui encontrar a resposta no documento."
