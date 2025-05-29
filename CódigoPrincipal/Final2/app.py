@@ -11,14 +11,15 @@ Original file is located at
 """app.py"""
 
 import streamlit as st
+
+# Configuração da página (primeira chamada ao Streamlit)
+st.set_page_config(page_title="Chatbot Conecta", page_icon="🤖")
+
 import os  # Adicionado para usar os.remove
 from chatbot import QASystem, ProcessamentoDeDocumento
 from crud import autenticar_usuario, criar_pessoa, listar_pessoas, buscar_por_id, atualizar_pessoa, deletar_pessoa, atualizar_senha, validar_forca_senha, armazenar_token, cadastrar_ecommerce, listar_ecommerces, buscar_ecommerce_por_id, atualizar_ecommerce, deletar_ecommerce
 
-# Configuração da página
-st.set_page_config(page_title="Chatbot Conecta", page_icon="🤖")
-
-# Inicializar o chatbot e o processador
+# Inicializar o chatbot e o processador apenas quando necessário
 if "qa_system" not in st.session_state:
     st.session_state.qa_system = QASystem()
 if "processor" not in st.session_state:
@@ -71,7 +72,7 @@ with tab1:
                 st.success(f"PDF processado com sucesso! ID: {doc_id}")
             else:
                 st.error("Erro ao processar o PDF.")
-            os.remove("temp.pdf")  # Agora funciona com a importação do os
+            os.remove("temp.pdf")
 
         # Histórico de mensagens
         if "messages" not in st.session_state:
