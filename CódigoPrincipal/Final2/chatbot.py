@@ -16,7 +16,7 @@ from langchain_huggingface import HuggingFaceEmbeddings, HuggingFaceEndpoint
 from langchain_mongodb import MongoDBAtlasVectorSearch
 from langchain.chains import RetrievalQA
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import PyPDFLoader  # Atualizado para langchain_community
 from langchain.prompts import PromptTemplate
 import re
 from pymongo import MongoClient

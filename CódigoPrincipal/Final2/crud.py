@@ -10,6 +10,7 @@ Original file is located at
 # -*- coding: utf-8 -*-
 """crud.py"""
 
+import os  # Adicionado para usar os.getenv
 from pymongo import MongoClient
 from dotenv import load_dotenv
 import datetime
