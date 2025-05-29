@@ -7,15 +7,10 @@ Original file is located at
     https://colab.research.google.com/drive/1Khds0wsdR77B7XFzUV5yKM5OxdEKjhsB
 """
 
-# -*- coding: utf-8 -*-
-"""app.py"""
-
 import streamlit as st
 
-# Configuração da página (primeira e única chamada ao Streamlit antes de qualquer outra interação)
 st.set_page_config(page_title="Chatbot Conecta", page_icon="🤖")
 
-# Lazy imports to avoid side effects before set_page_config
 def initialize_components():
     global qa_system, processor
     import os
