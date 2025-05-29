@@ -15,12 +15,17 @@ import os
 # Configuração inicial
 st.title("Chatbot de Comércio Eletrônico")
 
-# Acessar as chaves do secrets.toml
-HUGGINGFACEHUB_API_TOKEN = st.secrets["HUGGINGFACEHUB_API_TOKEN"]
-LANGCHAIN_API_KEY = st.secrets["LANGCHAIN_API_KEY"]
-LANGCHAIN_TRACING_V2 = st.secrets["LANGCHAIN_TRACING_V2"]
+# Acessar variáveis de ambiente (configuradas via secrets.toml no Streamlit Cloud)
+try:
+    HUGGINGFACEHUB_API_TOKEN = st.secrets["HUGGINGFACEHUB_API_TOKEN"]
+    LANGCHAIN_API_KEY = st.secrets["LANGCHAIN_API_KEY"]
+    LANGCHAIN_TRACING_V2 = st.secrets["LANGCHAIN_TRACING_V2"]
+    MONGO_URI = st.secrets["MONGO_URI"]
+except KeyError as e:
+    st.error(f"Erro: Variável de ambiente {e} não encontrada no secrets.toml.")
+    st.stop()
 
-# Definir variáveis de ambiente usando os valores do secrets
+# Definir variáveis de ambiente
 os.environ["HUGGINGFACEHUB_API_TOKEN"] = HUGGINGFACEHUB_API_TOKEN
 os.environ["LANGCHAIN_API_KEY"] = LANGCHAIN_API_KEY
 os.environ["LANGCHAIN_TRACING_V2"] = LANGCHAIN_TRACING_V2
@@ -43,7 +48,7 @@ def load_model():
             model_name,
             token=os.environ["HUGGINGFACEHUB_API_TOKEN"]
         )
-        # Load model on CPU with float16 precision
+        # Carregar modelo no CPU com precisão float16
         model = AutoModelForSeq2SeqLM.from_pretrained(
             model_name,
             device_map="cpu",
@@ -55,8 +60,8 @@ def load_model():
             "text2text-generation",
             model=model,
             tokenizer=tokenizer,
-            max_length=512,
-            max_new_tokens=256,
+            max_length=256,  # Reduzido para otimizar memória
+            max_new_tokens=128,  # Reduzido para otimizar memória
             temperature=0.7,
             do_sample=True,
             truncation=True
@@ -71,12 +76,14 @@ def load_model():
 
 # Configurar MongoDB
 try:
-    client = MongoClient("mongodb+srv://conecta-ia:O1r3VIK4X35CzEfL@conecta-cluster.hgjlsdc.mongodb.net/")
+    client = MongoClient(MONGO_URI)
     db = client["conecta"]
+    print("Conexão com MongoDB estabelecida com sucesso.")
 except Exception as e:
     st.error(f"Erro ao conectar ao MongoDB: {str(e)}")
     client = None
     db = None
+    st.stop()
 
 # Classe para processar documentos
 class ProcessamentoDeDocumento:
@@ -90,6 +97,7 @@ class ProcessamentoDeDocumento:
                 chunk_size=200,
                 chunk_overlap=50
             )
+            print("ProcessamentoDeDocumento inicializado com sucesso.")
         except Exception as e:
             st.error(f"Erro ao inicializar ProcessamentoDeDocumento: {str(e)}")
             self.embeddings = None
@@ -118,6 +126,7 @@ class ProcessamentoDeDocumento:
                 index_name="document_search"
             )
             gc.collect()
+            print(f"PDF processado com ID: {doc_id}")
             return doc_id
         except Exception as e:
             st.error(f"Erro ao processar o PDF: {str(e)}")
@@ -137,6 +146,7 @@ class QASystem:
                 embedding=self.embeddings,
                 index_name="document_search"
             )
+            print("QASystem inicializado com sucesso.")
         except Exception as e:
             st.error(f"Erro ao inicializar QASystem: {str(e)}")
             self.llm = None
@@ -222,14 +232,14 @@ Resposta:"""
 # Interface do Streamlit
 llm = load_model()
 if llm is None:
-    st.error("Falha ao carregar o modelo. Verifique os logs para mais detalhes.")
+    st.error("Falha ao carregar o modelo. Verifique os logs no Streamlit Cloud para mais detalhes.")
     st.stop()
 
 # Inicializar o QASystem apenas uma vez
 if st.session_state.qa_system is None:
     st.session_state.qa_system = QASystem(llm)
     if st.session_state.qa_system is None:
-        st.error("Falha ao inicializar o sistema de QA.")
+        st.error("Falha ao inicializar o sistema de QA. Verifique os logs no Streamlit Cloud.")
         st.stop()
 
 # Upload do PDF
@@ -248,7 +258,7 @@ if uploaded_file is not None and not st.session_state.doc_processed:
             st.success("PDF processado com sucesso!")
         else:
             st.session_state.doc_processed = False
-            st.error("Falha ao processar o PDF.")
+            st.error("Falha ao processar o PDF. Verifique os logs no Streamlit Cloud.")
 
 # Campo de entrada para perguntas
 if st.session_state.doc_processed:
