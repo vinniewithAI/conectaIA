@@ -60,7 +60,7 @@ def load_model():
             "text-generation",  # Adequado para Qwen2
             model=model,
             tokenizer=tokenizer,
-            max_new_tokens=512,  # Mantido do conecta_v2.py
+            max_new_tokens=256,  # Mantido do conecta_v2.py
             temperature=0.7,  # Mantido do conecta_v2.py
             do_sample=True,  # Mantido do conecta_v2.py
             truncation=True,
