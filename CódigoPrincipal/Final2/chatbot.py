@@ -60,7 +60,7 @@ def load_model():
             "text-generation",  # Adequado para DeepSeek-R1-Distill
             model=model,
             tokenizer=tokenizer,
-            max_new_tokens=256,  # Reduzido para economizar memória
+            max_new_tokens=128,  # Reduzido para economizar memória
             temperature=0.6,  # Recomendado para DeepSeek-R1
             do_sample=True,
             truncation=True,
