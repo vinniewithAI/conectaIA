@@ -43,7 +43,7 @@ if "qa_system" not in st.session_state:
 def load_model():
     print("Inicializando LLM...")
     try:
-        model_name = "google/flan-t5-small"
+        model_name = "google/flan-t5-small"  # Pode testar "google/flan-t5-base" para melhor qualidade
         tokenizer = AutoTokenizer.from_pretrained(
             model_name,
             token=os.environ["HUGGINGFACEHUB_API_TOKEN"]
@@ -60,10 +60,10 @@ def load_model():
             "text2text-generation",
             model=model,
             tokenizer=tokenizer,
-            max_length=256,  # Reduzido para otimizar memória
-            max_new_tokens=128,  # Reduzido para otimizar memória
-            temperature=0.7,
-            do_sample=True,
+            max_length=128,  # Reduzido para economizar memória
+            max_new_tokens=64,  # Reduzido para economizar memória
+            temperature=0,  # Geração determinística
+            do_sample=False,  # Desativar amostragem aleatória
             truncation=True
         )
         llm = HuggingFacePipeline(pipeline=pipe)
@@ -94,8 +94,8 @@ class ProcessamentoDeDocumento:
                 model_kwargs={'device': 'cpu'}
             )
             self.text_splitter = RecursiveCharacterTextSplitter(
-                chunk_size=200,
-                chunk_overlap=50
+                chunk_size=500,  # Aumentado para mais contexto
+                chunk_overlap=100
             )
             print("ProcessamentoDeDocumento inicializado com sucesso.")
         except Exception as e:
@@ -159,10 +159,10 @@ class QASystem:
         try:
             retriever = self.vector_store.as_retriever(
                 filter={"user_id": user_id},
-                search_kwargs={"k": 3}
+                search_kwargs={"k": 5}  # Aumentado para mais contexto
             )
-            template = """Com base no contexto, responda em português de forma clara e concisa.
-Se não encontrar a resposta, diga: "Não consegui encontrar a resposta no documento."
+            template = """Com base exclusivamente no contexto fornecido, responda em português de forma clara, concisa e completa. 
+Use frases completas e evite respostas genéricas. Se não encontrar a resposta, diga: "Não consegui encontrar a resposta no documento."
 
 Contexto:
 {context}
@@ -189,7 +189,7 @@ Resposta:"""
             if end_marker_prompt_part in resposta_limpa:
                 resposta_limpa = resposta_limpa.split(end_marker_prompt_part, 1)[-1].strip()
 
-            full_prompt_text_start = "Com base no contexto, responda em português de forma clara e concisa."
+            full_prompt_text_start = "Com base exclusivamente no contexto fornecido, responda em português de forma clara, concisa e completa."
             full_prompt_text_fallback = "Com base **exclusivamente** no contexto fornecido, responda à seguinte pergunta."
 
             if resposta_limpa.startswith(full_prompt_text_start):
