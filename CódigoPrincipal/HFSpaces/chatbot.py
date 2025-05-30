@@ -64,7 +64,6 @@ def load_model():
             device_map="cpu",
             torch_dtype=torch.float16,
             low_cpu_mem_usage=True,
-            load_in_4bit=True,
             token=HUGGINGFACEHUB_API_TOKEN
         )
         pipe = pipeline(
@@ -258,31 +257,4 @@ if st.session_state.qa_system is None:
         st.stop()
 
 # Upload do PDF
-uploaded_file = st.file_uploader("Faça upload do seu PDF", type="pdf")
-if uploaded_file is not None and not st.session_state.doc_processed:
-    with st.spinner("Processando o PDF..."):
-        with open("temp.pdf", "wb") as f:
-            f.write(uploaded_file.getbuffer())
-
-        processor = ProcessamentoDeDocumento()
-        doc_id = processor.process_pdf("temp.pdf", st.session_state.user_id)
-
-        if doc_id:
-            st.session_state.doc_processed = True
-            st.success("PDF processado com sucesso!")
-        else:
-            st.session_state.doc_processed = False
-            st.error("Falha ao processar o PDF. Verifique os logs.")
-
-# Campo de entrada para perguntas
-if st.session_state.doc_processed:
-    question = st.text_input("Digite sua pergunta:", placeholder="Ex.: O que é uma loja online?")
-    if question:
-        with st.spinner("Gerando resposta..."):
-            qa = st.session_state.qa_system
-            response = qa.ask_question(question, st.session_state.user_id)
-            if response:
-                st.write("**Resposta:**", response["resposta"])
-                st.write("**Fontes:**", ", ".join(response["fontes"]))
-else:
-    st.info("Por favor, faça upload de um PDF para começar.")
+uploaded_file = st
