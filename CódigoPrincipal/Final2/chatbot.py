@@ -43,7 +43,7 @@ if "qa_system" not in st.session_state:
 def load_model():
     print("Inicializando LLM...")
     try:
-        model_name = "Qwen/Qwen2-1.5B-Instruct"  # Modelo robusto, ~1.5B parâmetros
+        model_name = "xai-org/grok-1.5-mini"  # Modelo robusto, ~1.5B parâmetros
         tokenizer = AutoTokenizer.from_pretrained(
             model_name,
             token=os.environ["HUGGINGFACEHUB_API_TOKEN"]
