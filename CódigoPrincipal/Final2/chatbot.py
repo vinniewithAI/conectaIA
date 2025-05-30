@@ -71,7 +71,7 @@ def load_model():
             "text2text-generation",  # Adequado para Flan-T5
             model=model,
             tokenizer=tokenizer,
-            max_new_tokens=512,
+            max_new_tokens=256,
             temperature=0.7,
             do_sample=True,
             truncation=True
