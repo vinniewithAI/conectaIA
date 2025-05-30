@@ -35,6 +35,10 @@ os.environ["HUGGINGFACEHUB_API_TOKEN"] = HUGGINGFACEHUB_API_TOKEN
 os.environ["LANGCHAIN_API_KEY"] = LANGCHAIN_API_KEY
 os.environ["LANGCHAIN_TRACING_V2"] = LANGCHAIN_TRACING_V2
 
+# Liberar memória antes de carregar o modelo
+gc.collect()
+torch.cuda.empty_cache() if torch.cuda.is_available() else None
+
 # Inicializar estado da sessão
 if "user_id" not in st.session_state:
     st.session_state.user_id = "12345"
@@ -65,7 +69,7 @@ def load_model():
             "text-generation",  # Adequado para Phi-3
             model=model,
             tokenizer=tokenizer,
-            max_new_tokens=128,  # Reduzido para economizar memória
+            max_new_tokens=64,  # Reduzido para economizar memória
             temperature=0.7,  # Mantido do conecta_v2.py
             do_sample=True,
             truncation=True,
