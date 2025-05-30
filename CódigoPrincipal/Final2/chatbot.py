@@ -1,6 +1,5 @@
 import streamlit as st
 import torch
-import torch.quantization
 from pymongo import MongoClient
 import gc
 import re
@@ -16,7 +15,7 @@ import os
 # Configuração inicial
 st.title("Chatbot de Comércio Eletrônico")
 
-# Acessar variáveis de ambiente
+# Acessar variáveis de ambiente (configuradas via secrets.toml no Streamlit Cloud)
 try:
     HUGGINGFACEHUB_API_TOKEN = st.secrets["HUGGINGFACEHUB_API_TOKEN"]
     LANGCHAIN_API_KEY = st.secrets["LANGCHAIN_API_KEY"]
@@ -24,6 +23,11 @@ try:
     MONGO_URI = st.secrets["MONGO_URI"]
 except KeyError as e:
     st.error(f"Erro: Variável de ambiente {e} não encontrada no secrets.toml.")
+    st.stop()
+
+# Verificar se o token do Hugging Face está definido
+if not HUGGINGFACEHUB_API_TOKEN:
+    st.error("Erro: HUGGINGFACEHUB_API_TOKEN não está definido. Configure-o no secrets.toml.")
     st.stop()
 
 # Definir variáveis de ambiente
@@ -44,10 +48,10 @@ if "qa_system" not in st.session_state:
 def load_model():
     print("Inicializando LLM...")
     try:
-        model_name = "microsoft/Phi-3-mini-3.8B-instruct"
+        model_name = "microsoft/Phi-3-mini-4k-instruct"  # Modelo correto, ~3.8B parâmetros
         tokenizer = AutoTokenizer.from_pretrained(
             model_name,
-            token=os.environ["HUGGINGFACEHUB_API_TOKEN"]
+            token=HUGGINGFACEHUB_API_TOKEN
         )
         # Carregar modelo no CPU com precisão float16
         model = AutoModelForCausalLM.from_pretrained(
@@ -55,26 +59,21 @@ def load_model():
             device_map="cpu",
             torch_dtype=torch.float16,
             low_cpu_mem_usage=True,
-            token=os.environ["HUGGINGFACEHUB_API_TOKEN"]
-        )
-        # Aplicar quantização 8-bit manual
-        model = torch.quantization.quantize_dynamic(
-            model, {torch.nn.Linear}, dtype=torch.qint8
+            token=HUGGINGFACEHUB_API_TOKEN
         )
         pipe = pipeline(
-            "text-generation",
+            "text-generation",  # Adequado para Phi-3
             model=model,
             tokenizer=tokenizer,
             max_new_tokens=128,  # Reduzido para economizar memória
-            temperature=0.7,
+            temperature=0.7,  # Mantido do conecta_v2.py
             do_sample=True,
             truncation=True,
-            return_full_text=False
+            return_full_text=False  # Evita repetir o prompt
         )
         llm = HuggingFacePipeline(pipeline=pipe)
         print("LLM inicializado com sucesso.")
-        torch.cuda.empty_cache()  # Limpar cache (se aplicável)
-        gc.collect()
+        gc.collect()  # Liberar memória após carregar o modelo
         return llm
     except Exception as e:
         print(f"Erro ao inicializar o modelo: {str(e)}")
@@ -133,7 +132,6 @@ class ProcessamentoDeDocumento:
                 index_name="document_search"
             )
             gc.collect()
-            torch.cuda.empty_cache()
             print(f"PDF processado com ID: {doc_id}")
             return doc_id
         except Exception as e:
@@ -165,7 +163,7 @@ class QASystem:
             st.error("Erro: Sistema de QA não inicializado corretamente.")
             return None
         try:
-            with torch.no_grad():
+            with torch.no_grad():  # Reduz uso de memória
                 retriever = self.vector_store.as_retriever(
                     filter={"user_id": user_id},
                     search_kwargs={"k": 5}
@@ -232,8 +230,7 @@ Resposta:"""
                     set([doc.metadata.get("source", doc.metadata.get("file_name", "Desconhecido")) for doc in
                          result["source_documents"]]))
 
-                gc.collect()
-                torch.cuda.empty_cache()
+                gc.collect()  # Liberar memória
                 return {
                     "resposta": resposta_limpa,
                     "fontes": fontes_unicas
@@ -259,6 +256,7 @@ if st.session_state.qa_system is None:
 uploaded_file = st.file_uploader("Faça upload do seu PDF", type="pdf")
 if uploaded_file is not None and not st.session_state.doc_processed:
     with st.spinner("Processando o PDF..."):
+        # Salvar o arquivo temporariamente
         with open("temp.pdf", "wb") as f:
             f.write(uploaded_file.getbuffer())
 
