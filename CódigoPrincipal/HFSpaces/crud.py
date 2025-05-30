@@ -3,7 +3,6 @@
 
 import os
 from pymongo import MongoClient
-from dotenv import load_dotenv
 import datetime
 from bson import ObjectId
 import bcrypt
@@ -12,14 +11,13 @@ from urllib.parse import urlparse
 print("Iniciando carregamento do crud.py...")  # Depuração
 
 # Carregar variáveis de ambiente
-load_dotenv()
-print("Variáveis de ambiente carregadas.")  # Depuração
-
-MONGO_URI = os.getenv("MONGO_URI")
-if not MONGO_URI:
-    print("Erro: MONGO_URI não encontrado nas variáveis de ambiente.")
-    raise ValueError("MONGO_URI não encontrado nas variáveis de ambiente. Configure-o no .env ou nos segredos do Streamlit Cloud.")
-print(f"MONGO_URI carregado: {MONGO_URI}")  # Depuração
+try:
+    MONGO_URI = os.environ["MONGO_URI"]
+    print("Variáveis de ambiente carregadas.")  # Depuração
+    print(f"MONGO_URI carregado: {MONGO_URI}")  # Depuração (remover em produção)
+except KeyError as e:
+    print(f"Erro: Variável de ambiente {e} não encontrada.")
+    raise ValueError(f"Variável de ambiente {e} não encontrada. Configure-a no Hugging Face Spaces.")
 
 def conecta_user():
     print("Conectando à coleção 'user'...")  # Depuração
@@ -234,21 +232,20 @@ def buscar_tokens_por_usuario(user_id):
         return None
 
 # E-commerce
-def cadastrar_ecommerce(nome: str, categoria: str, descricao: str, faixa_preco: str, url: str, plano: str, pros: str, contras: str):
+def cadastrar_ecommerce(nome: str, categoria: str, descricao: str, faixa_preco: int, url: str, plano: str, pros: str, contras: str):
     print(f"Cadastrando e-commerce: {nome}")  # Depuração
     colecao = conecta_ecommerce()
     try:
-        faixa_preco_int = int(faixa_preco) if faixa_preco else 0
         ecommerce = {
             "_id": ObjectId(),
             "name": nome,
             "category": categoria,
             "description": descricao,
-            "faixa-preco": faixa_preco_int,
+            "faixa-preco": faixa_preco,
             "url": url,
             "plano": plano,
-            "pros": pros.split(",") if isinstance(pros, str) else pros,
-            "contras": contras.split(",") if isinstance(contras, str) else contras,
+            "pros": [p.strip() for p in pros.split(",")] if pros else [],
+            "contras": [c.strip() for c in contras.split(",")] if contras else [],
             "updated_at": datetime.datetime.utcnow()
         }
 
@@ -259,13 +256,14 @@ def cadastrar_ecommerce(nome: str, categoria: str, descricao: str, faixa_preco: 
             except:
                 return False
 
+        if url and not validar_url(url):
+            print("Erro: URL inválida")
+            return None
+
         resultado = colecao.insert_one(ecommerce)
-        print(f"\n✅ E-commerce cadastrado com ID: {resultado.inserted_id}")
+        print(f"E-commerce cadastrado com ID: {resultado.inserted_id}")
         return resultado.inserted_id
 
-    except ValueError:
-        print("Erro: Faixa de preço deve ser um número")
-        return None
     except Exception as e:
         print(f"Erro ao cadastrar e-commerce: {e}")
         return None
@@ -301,7 +299,7 @@ def atualizar_ecommerce(id_ecommerce, updates):
         obj_id = ObjectId(id_ecommerce)
         ecommerce = colecao.find_one({"_id": obj_id})
         if not ecommerce:
-            print("❌ E-commerce não encontrado")
+            print("E-commerce não encontrado")
             return False
 
         if updates:
@@ -312,11 +310,8 @@ def atualizar_ecommerce(id_ecommerce, updates):
             )
             return resultado.modified_count > 0
         else:
-            print("⚠️ Nenhum campo selecionado para atualização")
+            print("Nenhum campo selecionado para atualização")
             return False
-    except ValueError:
-        print("Erro: Rating deve ser um número")
-        return False
     except Exception as e:
         print(f"Erro ao atualizar e-commerce: {e}")
         return False
