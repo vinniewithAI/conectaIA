@@ -10,9 +10,9 @@ from langchain_huggingface import HuggingFaceEmbeddings, HuggingFacePipeline
 from langchain_mongodb import MongoDBAtlasVectorSearch
 from langchain.chains import RetrievalQA
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.document_loaders import PyPDFLoader  # Atualizado
+from langchain_community.document_loaders import PyPDFLoader
 from langchain.prompts import PromptTemplate
-from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, pipeline  # Adicionado AutoModelForSeq2SeqLM
 import os
 
 # Configuração inicial
