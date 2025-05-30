@@ -52,13 +52,12 @@ if "qa_system" not in st.session_state:
 def load_model():
     print("Inicializando LLM...")
     try:
-        model_name = "microsoft/Phi-3-mini-4k-instruct"  # Modelo correto, ~3.8B parâmetros
+        model_name = "google/flan-t5-base"  # ~250M parâmetros
         tokenizer = AutoTokenizer.from_pretrained(
             model_name,
             token=HUGGINGFACEHUB_API_TOKEN
         )
-        # Carregar modelo no CPU com precisão float16
-        model = AutoModelForCausalLM.from_pretrained(
+        model = AutoModelForSeq2SeqLM.from_pretrained(
             model_name,
             device_map="cpu",
             torch_dtype=torch.float16,
@@ -66,18 +65,17 @@ def load_model():
             token=HUGGINGFACEHUB_API_TOKEN
         )
         pipe = pipeline(
-            "text-generation",  # Adequado para Phi-3
+            "text2text-generation",  # Adequado para Flan-T5
             model=model,
             tokenizer=tokenizer,
-            max_new_tokens=64,  # Reduzido para economizar memória
-            temperature=0.7,  # Mantido do conecta_v2.py
+            max_new_tokens=512,
+            temperature=0.7,
             do_sample=True,
-            truncation=True,
-            return_full_text=False  # Evita repetir o prompt
+            truncation=True
         )
         llm = HuggingFacePipeline(pipeline=pipe)
         print("LLM inicializado com sucesso.")
-        gc.collect()  # Liberar memória após carregar o modelo
+        gc.collect()
         return llm
     except Exception as e:
         print(f"Erro ao inicializar o modelo: {str(e)}")
