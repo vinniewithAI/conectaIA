@@ -18,7 +18,7 @@ import os
 # Configuração inicial
 st.title("Chatbot de Comércio Eletrônico")
 
-# Acessar variáveis de ambiente diretamente com os.environ
+# Acessar variáveis de ambiente
 try:
     HUGGINGFACEHUB_API_TOKEN = os.environ["HUGGINGFACEHUB_API_TOKEN"]
     LANGCHAIN_API_KEY = os.environ["LANGCHAIN_API_KEY"]
@@ -28,16 +28,16 @@ except KeyError as e:
     st.error(f"Erro: Variável de ambiente {e} não encontrada.")
     st.stop()
 
-# Verificar se o token do Hugging Face está definido
+# Verificar token do Hugging Face
 if not HUGGINGFACEHUB_API_TOKEN:
     st.error("Erro: HUGGINGFACEHUB_API_TOKEN não está definido.")
     st.stop()
 
-# Definir variáveis de ambiente para langchain
+# Definir variáveis para langchain
 os.environ["LANGCHAIN_API_KEY"] = LANGCHAIN_API_KEY
 os.environ["LANGCHAIN_TRACING_V2"] = LANGCHAIN_TRACING_V2
 
-# Liberar memória antes de carregar o modelo
+# Liberar memória
 gc.collect()
 torch.cuda.empty_cache() if torch.cuda.is_available() else None
 
@@ -49,12 +49,12 @@ if "doc_processed" not in st.session_state:
 if "qa_system" not in st.session_state:
     st.session_state.qa_system = None
 
-# Carregar o modelo e pipeline (apenas uma vez)
+# Carregar o modelo
 @st.cache_resource
 def load_model():
     print("Inicializando LLM...")
     try:
-        model_name = "Qwen/Qwen2-7B-Instruct"
+        model_name = "facebook/opt-1.3b"
         tokenizer = AutoTokenizer.from_pretrained(
             model_name,
             token=HUGGINGFACEHUB_API_TOKEN
@@ -70,7 +70,7 @@ def load_model():
             "text-generation",
             model=model,
             tokenizer=tokenizer,
-            max_new_tokens=128,  # Reduzido para economizar memória
+            max_new_tokens=64,  # Reduzido para economizar memória
             temperature=0.7,
             do_sample=True,
             truncation=True
@@ -104,7 +104,7 @@ class ProcessamentoDeDocumento:
                 model_kwargs={'device': 'cpu'}
             )
             self.text_splitter = RecursiveCharacterTextSplitter(
-                chunk_size=500,  # Aumentado para reduzir número de chunks
+                chunk_size=1000,  # Aumentado para reduzir chunks
                 chunk_overlap=50
             )
             print("ProcessamentoDeDocumento inicializado com sucesso.")
@@ -170,7 +170,7 @@ class QASystem:
             with torch.no_grad():
                 retriever = self.vector_store.as_retriever(
                     filter={"user_id": user_id},
-                    search_kwargs={"k": 2}  # Reduzido para economizar memória
+                    search_kwargs={"k": 1}  # Reduzido para economizar memória
                 )
                 template = """Com base **apenas** no contexto fornecido, responda à pergunta **em português**.
 Formule uma resposta **clara, concisa e natural**, sem introduções, o contexto ou a pergunta.
@@ -249,7 +249,7 @@ if llm is None:
     st.error("Falha ao carregar o modelo. Verifique os logs para mais detalhes.")
     st.stop()
 
-# Inicializar o QASystem apenas uma vez
+# Inicializar o QASystem
 if st.session_state.qa_system is None:
     st.session_state.qa_system = QASystem(llm)
     if st.session_state.qa_system is None:
