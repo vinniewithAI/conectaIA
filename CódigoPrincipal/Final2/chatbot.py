@@ -1,5 +1,6 @@
 import streamlit as st
 import torch
+import torch.quantization
 from pymongo import MongoClient
 import gc
 import re
@@ -15,7 +16,7 @@ import os
 # Configuração inicial
 st.title("Chatbot de Comércio Eletrônico")
 
-# Acessar variáveis de ambiente (configuradas via secrets.toml no Streamlit Cloud)
+# Acessar variáveis de ambiente
 try:
     HUGGINGFACEHUB_API_TOKEN = st.secrets["HUGGINGFACEHUB_API_TOKEN"]
     LANGCHAIN_API_KEY = st.secrets["LANGCHAIN_API_KEY"]
@@ -43,7 +44,7 @@ if "qa_system" not in st.session_state:
 def load_model():
     print("Inicializando LLM...")
     try:
-        model_name = "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B"  # Modelo leve, ~1.5B parâmetros
+        model_name = "microsoft/Phi-3-mini-3.8B-instruct"
         tokenizer = AutoTokenizer.from_pretrained(
             model_name,
             token=os.environ["HUGGINGFACEHUB_API_TOKEN"]
@@ -56,18 +57,24 @@ def load_model():
             low_cpu_mem_usage=True,
             token=os.environ["HUGGINGFACEHUB_API_TOKEN"]
         )
+        # Aplicar quantização 8-bit manual
+        model = torch.quantization.quantize_dynamic(
+            model, {torch.nn.Linear}, dtype=torch.qint8
+        )
         pipe = pipeline(
-            "text-generation",  # Adequado para DeepSeek-R1-Distill
+            "text-generation",
             model=model,
             tokenizer=tokenizer,
             max_new_tokens=128,  # Reduzido para economizar memória
-            temperature=0.6,  # Recomendado para DeepSeek-R1
+            temperature=0.7,
             do_sample=True,
             truncation=True,
-            return_full_text=False  # Evita repetir o prompt
+            return_full_text=False
         )
         llm = HuggingFacePipeline(pipeline=pipe)
         print("LLM inicializado com sucesso.")
+        torch.cuda.empty_cache()  # Limpar cache (se aplicável)
+        gc.collect()
         return llm
     except Exception as e:
         print(f"Erro ao inicializar o modelo: {str(e)}")
@@ -126,6 +133,7 @@ class ProcessamentoDeDocumento:
                 index_name="document_search"
             )
             gc.collect()
+            torch.cuda.empty_cache()
             print(f"PDF processado com ID: {doc_id}")
             return doc_id
         except Exception as e:
@@ -157,7 +165,7 @@ class QASystem:
             st.error("Erro: Sistema de QA não inicializado corretamente.")
             return None
         try:
-            with torch.no_grad():  # Reduz uso de memória
+            with torch.no_grad():
                 retriever = self.vector_store.as_retriever(
                     filter={"user_id": user_id},
                     search_kwargs={"k": 5}
@@ -224,7 +232,8 @@ Resposta:"""
                     set([doc.metadata.get("source", doc.metadata.get("file_name", "Desconhecido")) for doc in
                          result["source_documents"]]))
 
-                gc.collect()  # Liberar memória
+                gc.collect()
+                torch.cuda.empty_cache()
                 return {
                     "resposta": resposta_limpa,
                     "fontes": fontes_unicas
@@ -250,7 +259,6 @@ if st.session_state.qa_system is None:
 uploaded_file = st.file_uploader("Faça upload do seu PDF", type="pdf")
 if uploaded_file is not None and not st.session_state.doc_processed:
     with st.spinner("Processando o PDF..."):
-        # Salvar o arquivo temporariamente
         with open("temp.pdf", "wb") as f:
             f.write(uploaded_file.getbuffer())
 
