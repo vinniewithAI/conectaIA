@@ -19,10 +19,14 @@ import os
 st.title("Chatbot de Comércio Eletrônico")
 
 # Acessar variáveis de ambiente diretamente com os.environ
-HUGGINGFACEHUB_API_TOKEN = "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"
-LANGCHAIN_API_KEY = "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"
-LANGCHAIN_TRACING_V2 = "true"
-MONGO_URI = "mongodb+srv://conecta-ia:O1r3VIK4X35CzEfL@conecta-cluster.hgjlsdc.mongodb.net/"
+try:
+    HUGGINGFACEHUB_API_TOKEN = os.environ["HUGGINGFACEHUB_API_TOKEN"]
+    LANGCHAIN_API_KEY = os.environ["LANGCHAIN_API_KEY"]
+    LANGCHAIN_TRACING_V2 = os.environ["LANGCHAIN_TRACING_V2"]
+    MONGO_URI = os.environ["MONGO_URI"]
+except KeyError as e:
+    st.error(f"Erro: Variável de ambiente {e} não encontrada.")
+    st.stop()
 
 # Verificar se o token do Hugging Face está definido
 if not HUGGINGFACEHUB_API_TOKEN:
