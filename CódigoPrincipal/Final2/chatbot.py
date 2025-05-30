@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+"""chatbot.py"""
+
 import streamlit as st
 import torch
 from pymongo import MongoClient
@@ -7,7 +10,7 @@ from langchain_huggingface import HuggingFaceEmbeddings, HuggingFacePipeline
 from langchain_mongodb import MongoDBAtlasVectorSearch
 from langchain.chains import RetrievalQA
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import PyPDFLoader  # Atualizado
 from langchain.prompts import PromptTemplate
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 import os
