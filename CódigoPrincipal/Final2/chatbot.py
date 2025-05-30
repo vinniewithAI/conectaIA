@@ -174,7 +174,7 @@ class QASystem:
                     search_kwargs={"k": 5}
                 )
                 template = """Com base no contexto fornecido, responda à pergunta **em português brasileiro**.
-Formule uma resposta **clara, concisa e natural**, sem o contexto ou a pergunta.
+Formule uma resposta **clara, concisa e natural**.
 Se a resposta não puder ser encontrada no contexto fornecido, responda **apenas**: "Não consegui encontrar a resposta para esta pergunta no documento fornecido."
 
 Contexto:
