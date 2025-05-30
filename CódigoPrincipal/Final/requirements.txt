@@ -1,0 +1,6 @@
+streamlit
+pymongo
+langchain
+langchain-mongodb
+sentence-transformers
+python-dotenv
