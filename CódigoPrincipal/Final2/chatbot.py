@@ -43,7 +43,7 @@ if "qa_system" not in st.session_state:
 def load_model():
     print("Inicializando LLM...")
     try:
-        model_name = "xai-org/grok-1.5-mini"  # Modelo robusto, ~1.5B parâmetros
+        model_name = "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B"  # Modelo leve, ~1.5B parâmetros
         tokenizer = AutoTokenizer.from_pretrained(
             model_name,
             token=os.environ["HUGGINGFACEHUB_API_TOKEN"]
@@ -57,12 +57,12 @@ def load_model():
             token=os.environ["HUGGINGFACEHUB_API_TOKEN"]
         )
         pipe = pipeline(
-            "text-generation",  # Adequado para Qwen2
+            "text-generation",  # Adequado para DeepSeek-R1-Distill
             model=model,
             tokenizer=tokenizer,
-            max_new_tokens=256,  # Mantido do conecta_v2.py
-            temperature=0.7,  # Mantido do conecta_v2.py
-            do_sample=True,  # Mantido do conecta_v2.py
+            max_new_tokens=256,  # Reduzido para economizar memória
+            temperature=0.6,  # Recomendado para DeepSeek-R1
+            do_sample=True,
             truncation=True,
             return_full_text=False  # Evita repetir o prompt
         )
