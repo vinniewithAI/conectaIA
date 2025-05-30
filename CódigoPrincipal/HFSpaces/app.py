@@ -2,42 +2,24 @@
 """app.py"""
 
 import streamlit as st
+import os
 from chatbot import load_model, QASystem, ProcessamentoDeDocumento
+from crud import (
+    autenticar_usuario, criar_pessoa, validar_forca_senha, armazenar_token,
+    listar_pessoas, atualizar_pessoa, deletar_pessoa, atualizar_senha,
+    cadastrar_ecommerce, listar_ecommerces, atualizar_ecommerce, deletar_ecommerce
+)
 
-# Inicializar a aplicação
+# Configuração da página
 st.set_page_config(page_title="Conecta IA", layout="wide")
 
-# Carregar o modelo
+# Carregar o modelo uma única vez
 llm = load_model()
 if llm is None:
-    st.error("Falha ao carregar o modelo.")
+    st.error("Falha ao carregar o modelo. Verifique os logs.")
     st.stop()
 
 # Inicializar o sistema de QA
-qa_system = QASystem(llm)
-if qa_system is None:
-    st.error("Falha ao inicializar o sistema de QA.")
-    st.stop()
-
-# Inicializar o processador de documentos
-processor = ProcessamentoDeDocumento()
-if processor is None:
-    st.error("Falha ao inicializar o processador de documentos.")
-    st.stop()
-
-# Carregar o modelo LLM
-try:
-    llm = load_model()
-    if llm is None:
-        st.error("Falha ao carregar o modelo LLM. Verifique os logs no Streamlit Cloud.")
-        st.stop()
-    print("Modelo LLM carregado com sucesso.")  # Depuração
-except Exception as e:
-    print(f"Erro ao carregar o modelo LLM: {e}")
-    st.error(f"Erro ao carregar o modelo LLM: {e}")
-    st.stop()
-
-# Inicializar o chatbot e o processador apenas quando necessário
 if "qa_system" not in st.session_state:
     try:
         st.session_state.qa_system = QASystem(llm)
@@ -47,6 +29,7 @@ if "qa_system" not in st.session_state:
         st.error(f"Erro ao inicializar QASystem: {e}")
         st.stop()
 
+# Inicializar o processador de documentos
 if "processor" not in st.session_state:
     try:
         st.session_state.processor = ProcessamentoDeDocumento()
@@ -61,7 +44,6 @@ tab1, tab2, tab3, tab4 = st.tabs(["Chatbot", "Gerenciar Usuários", "Gerenciar E
 
 # 1. Chatbot
 with tab1:
-    # Verificar login
     if "user_id" not in st.session_state:
         st.title("Login")
         email = st.text_input("Email", key="login_email")
@@ -73,7 +55,7 @@ with tab1:
                 user = autenticar_usuario(email, password)
                 if user:
                     st.session_state.user_id = str(user["_id"])
-                    st.session_state.user_name = user.get("nome", "Usuário")  # Valor padrão se "nome" não existir
+                    st.session_state.user_name = user.get("nome", "Usuário")
                     st.success("Login bem-sucedido!")
                     st.rerun()
                 else:
@@ -100,13 +82,10 @@ with tab1:
             except Exception as e:
                 print(f"Erro ao registrar usuário: {e}")
                 st.error(f"Erro ao registrar usuário: {e}")
-
     else:
-        # Usar valor padrão se user_name não estiver definido
         user_name = st.session_state.get("user_name", "Usuário")
         st.title(f"Chatbot Conecta 🤖 - Bem-vindo, {user_name}")
 
-        # Upload de PDF
         uploaded_file = st.file_uploader("Carregue um PDF para análise", type=["pdf"])
         if uploaded_file and st.button("Processar PDF"):
             with open("temp.pdf", "wb") as f:
@@ -116,7 +95,7 @@ with tab1:
                 if doc_id:
                     st.success(f"PDF processado com sucesso! ID: {doc_id}")
                 else:
-                    st.error("Erro ao processar o PDF. Verifique os logs no Streamlit Cloud.")
+                    st.error("Erro ao processar o PDF. Verifique os logs.")
             except Exception as e:
                 print(f"Erro ao processar PDF: {e}")
                 st.error(f"Erro ao processar o PDF: {e}")
@@ -124,17 +103,14 @@ with tab1:
                 if os.path.exists("temp.pdf"):
                     os.remove("temp.pdf")
 
-        # Histórico de mensagens
         if "messages" not in st.session_state:
             st.session_state.messages = []
 
-        # Exibe mensagens anteriores
         for msg in st.session_state.messages:
             st.chat_message(msg["role"]).write(msg["content"])
             if "sources" in msg:
                 st.write("**Fontes:**", ", ".join(msg["sources"]))
 
-        # Input do usuário
         user_input = st.chat_input("Pergunte algo sobre marketplaces...")
         if user_input:
             st.session_state.messages.append({"role": "user", "content": user_input})
@@ -151,14 +127,13 @@ with tab1:
                     st.chat_message("assistant").write(resposta["resposta"])
                     st.write("**Fontes:**", ", ".join(resposta["fontes"]))
 
-                    # Armazenar a conversa no MongoDB
                     messages = [
                         {"role": "user", "content": user_input},
                         {"role": "assistant", "content": resposta["resposta"]}
                     ]
                     armazenar_token(st.session_state.user_id, messages)
                 else:
-                    st.error("Erro ao obter resposta. Verifique os logs no Streamlit Cloud.")
+                    st.error("Erro ao obter resposta. Verifique os logs.")
             except Exception as e:
                 print(f"Erro ao processar pergunta: {e}")
                 st.error(f"Erro ao processar pergunta: {e}")
@@ -226,7 +201,7 @@ with tab3:
         if st.button("Cadastrar E-commerce"):
             try:
                 faixa_preco_int = int(faixa_preco) if faixa_preco else 0
-                if cadastrar_ecommerce(nome, categoria, descricao, faixa_preco, url, plano, pros, contras):
+                if cadastrar_ecommerce(nome, categoria, descricao, faixa_preco_int, url, plano, pros, contras):
                     st.success("E-commerce cadastrado com sucesso!")
                 else:
                     st.error("Erro ao cadastrar e-commerce.")

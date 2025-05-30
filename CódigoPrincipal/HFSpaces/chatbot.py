@@ -64,6 +64,7 @@ def load_model():
             device_map="cpu",
             torch_dtype=torch.float16,
             low_cpu_mem_usage=True,
+            load_in_4bit=True,
             token=HUGGINGFACEHUB_API_TOKEN
         )
         pipe = pipeline(
