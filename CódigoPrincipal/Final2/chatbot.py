@@ -43,7 +43,8 @@ if "qa_system" not in st.session_state:
 def load_model():
     print("Inicializando LLM...")
     try:
-        model_name = "google/flan-t5-small"  # Pode testar "google/flan-t5-base" para melhor qualidade
+        model_name = "google/flan-t5-small"  # Leve, ~80M parâmetros
+        # model_name = "google/flan-t5-base"  # Melhor qualidade, ~250M parâmetros (teste com cuidado no Streamlit Cloud)
         tokenizer = AutoTokenizer.from_pretrained(
             model_name,
             token=os.environ["HUGGINGFACEHUB_API_TOKEN"]
@@ -57,13 +58,12 @@ def load_model():
             token=os.environ["HUGGINGFACEHUB_API_TOKEN"]
         )
         pipe = pipeline(
-            "text2text-generation",
+            "text2text-generation",  # Mantido para compatibilidade com Flan-T5
             model=model,
             tokenizer=tokenizer,
-            max_length=128,  # Reduzido para economizar memória
-            max_new_tokens=64,  # Reduzido para economizar memória
-            temperature=0,  # Geração determinística
-            do_sample=False,  # Desativar amostragem aleatória
+            max_new_tokens=512,  # Ajustado do conecta_v2.py
+            temperature=0.7,  # Ajustado do conecta_v2.py
+            do_sample=True,  # Ajustado do conecta_v2.py
             truncation=True
         )
         llm = HuggingFacePipeline(pipeline=pipe)
@@ -91,10 +91,10 @@ class ProcessamentoDeDocumento:
         try:
             self.embeddings = HuggingFaceEmbeddings(
                 model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
-                model_kwargs={'device': 'cpu'}
+                model_kwargs={'device': 'cpu'}  # CPU para Streamlit Cloud
             )
             self.text_splitter = RecursiveCharacterTextSplitter(
-                chunk_size=500,  # Aumentado para mais contexto
+                chunk_size=500,  # Mantido do conecta_v2.py
                 chunk_overlap=100
             )
             print("ProcessamentoDeDocumento inicializado com sucesso.")
@@ -139,7 +139,7 @@ class QASystem:
             self.llm = llm
             self.embeddings = HuggingFaceEmbeddings(
                 model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
-                model_kwargs={'device': 'cpu'}
+                model_kwargs={'device': 'cpu'}  # CPU para Streamlit Cloud
             )
             self.vector_store = MongoDBAtlasVectorSearch(
                 collection=db.document_vectors,
@@ -159,17 +159,18 @@ class QASystem:
         try:
             retriever = self.vector_store.as_retriever(
                 filter={"user_id": user_id},
-                search_kwargs={"k": 5}  # Aumentado para mais contexto
+                search_kwargs={"k": 5}  # Mantido do conecta_v2.py
             )
-            template = """Com base exclusivamente no contexto fornecido, responda em português de forma clara, concisa e completa. 
-Use frases completas e evite respostas genéricas. Se não encontrar a resposta, diga: "Não consegui encontrar a resposta no documento."
+            template = """Com base **apenas** no contexto fornecido, responda à pergunta **em português**.
+Formule uma resposta **clara, concisa e natural**, sem introduções, o contexto ou a pergunta.
+Se a resposta não puder ser encontrada no contexto fornecido, responda **apenas**: "Não consegui encontrar a resposta para esta pergunta no documento fornecido."
 
 Contexto:
 {context}
 
 Pergunta: {question}
 
-Resposta:"""
+Resposta:"""  # Adotado do conecta_v2.py
             PROMPT = PromptTemplate(template=template, input_variables=["context", "question"])
 
             qa = RetrievalQA.from_chain_type(
@@ -185,11 +186,12 @@ Resposta:"""
             resposta_bruta = result["result"].strip()
             resposta_limpa = resposta_bruta
 
+            # Limpeza de respostas adotada do conecta_v2.py
             end_marker_prompt_part = "Resposta:"
             if end_marker_prompt_part in resposta_limpa:
                 resposta_limpa = resposta_limpa.split(end_marker_prompt_part, 1)[-1].strip()
 
-            full_prompt_text_start = "Com base exclusivamente no contexto fornecido, responda em português de forma clara, concisa e completa."
+            full_prompt_text_start = "Com base **apenas** no contexto fornecido, responda à pergunta **em português**."
             full_prompt_text_fallback = "Com base **exclusivamente** no contexto fornecido, responda à seguinte pergunta."
 
             if resposta_limpa.startswith(full_prompt_text_start):
