@@ -4,7 +4,7 @@ Este repositório busca desenvolver um Modelo de Chatbot usando LLM e integraç�
 Um chatbot inteligente para recomendar ferramentas tecnológicas para startups, integrando:
 - **Google Gemini** como modelo de linguagem
 - **MongoDB Atlas** como banco de dados
-- **Telegram** como plataforma de mensagens
+- **Hugging Face Spaces** como plataforma de deploy da aplicação
 
 ## 🚀 Funcionalidades
 
@@ -22,11 +22,9 @@ Um chatbot inteligente para recomendar ferramentas tecnológicas para startups, 
 ![Python](https://img.shields.io/badge/Python-3.8+-blue?logo=python)
 ![MongoDB](https://img.shields.io/badge/MongoDB-5.0+-green?logo=mongodb)
 ![Google Gemini](https://img.shields.io/badge/Google_Gemini-1.5-orange?logo=google)
-![Telegram API](https://img.shields.io/badge/Telegram_Bot_API-20.0+-blue?logo=telegram)
 
-## 📦 Pré-requisitos
+## 📦 Pré-requisitos para desenvolver
 
-- Conta no [Google AI Studio](https://aistudio.google.com/) (para Gemini API)
 - Conta no [MongoDB Atlas](https://www.mongodb.com/atlas/database)
-- Telegram instalado (para testar o bot)
+- Conta e chave API para deploy no Hugging Face Spaces
 - Python 3.8+ ou Google Colab
