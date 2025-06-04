@@ -111,10 +111,10 @@ class QASystem:
         try:
             # Choose your Gemini model
             self.llm = genai.GenerativeModel(
-                model_name='gemini-1.5-flash-latest', # Or 'gemini-pro'
+                model_name='gemini-1.5-flash-latest',
                  generation_config={
                     "temperature": 0.7,
-                    "max_output_tokens": 512, # Renamed from max_tokens
+                    "max_output_tokens": 512, 
                 }
             )
             self.embeddings = HuggingFaceEmbeddings(
@@ -124,7 +124,7 @@ class QASystem:
             self.vector_store = MongoDBAtlasVectorSearch(
                 collection=db.document_vectors,
                 embedding=self.embeddings,
-                index_name="document_search" # Default LangChain index name
+                index_name="document_search" 
             )
             print("QASystem inicializado com sucesso usando Gemini.")
         except Exception as e:
@@ -230,7 +230,6 @@ Resposta Concisa:
                 if resposta_limpa.lower().startswith(phrase.lower()):
                     resposta_limpa = resposta_limpa[len(phrase):].strip()
             
-            # Your regex cleaning
             resposta_limpa = re.sub(r'\S*/[a-zA-Z]\.alt(/[a-zA-Z]\.alt)*l?', '', resposta_limpa)
             resposta_limpa = re.sub(r'\s{2,}', ' ', resposta_limpa).strip()
             resposta_limpa = re.sub(r'\s*([.,;?!])', r'\1', resposta_limpa)

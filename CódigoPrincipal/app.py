@@ -56,7 +56,6 @@ def generate_and_display_mental_map(conversation_messages):
 
     conversation_text = "\n".join([f"{msg['role']}: {msg['content']}" for msg in conversation_messages])
     
-    # Using the same prompt structure as before for consistency
     prompt_template_mapa = """Com base na seguinte conversa, identifique os 5 a 7 principais tópicos ou substantivos chave discutidos.
 Liste-os separados por vírgulas. Priorize substantivos ou frases nominais curtas.
 
@@ -67,11 +66,8 @@ Tópicos Principais:"""
     full_prompt_mapa = prompt_template_mapa.format(text=conversation_text)
 
     try:
-        # Initialize a Gemini model instance specifically for this task if preferred,
-        # or use a global one if you create one in app.py.
-        # It's generally better to instantiate where needed or pass from a central point.
         map_llm = genai.GenerativeModel(
-            'gemini-1.5-flash-latest', # or 'gemini-pro' - flash is faster and often sufficient for this
+            'gemini-1.5-flash-latest', 
             generation_config={"temperature": 0.6} # Low temp for factual extraction
         )
         
@@ -205,7 +201,6 @@ with tab1:
 
         uploaded_file = st.file_uploader("Carregue um PDF para análise", type=["pdf"])
         if uploaded_file: # Processar imediatamente após o upload, se um novo arquivo for carregado
-            # Adicionar um botão explícito para processar, ou usar uma lógica para processar apenas uma vez
             if "last_uploaded_filename" not in st.session_state or st.session_state.last_uploaded_filename != uploaded_file.name:
                 if st.button("Processar PDF Carregado"):
                     with st.spinner("Processando PDF..."):
@@ -265,14 +260,12 @@ with tab1:
                             {"role": "user", "content": user_input},
                             {"role": "assistant", "content": resposta["resposta"]}
                         ]
-                        # Certifique-se que crud.armazenar_token aceita esta estrutura
                         armazenar_token(st.session_state.user_id, messages_to_store)
-                    elif resposta: # Resposta existe mas não tem "resposta" (pode ser um erro tratado)
+                    elif resposta: # Resposta existe mas não tem "resposta" 
                         st.error("Não foi possível obter uma resposta formatada do assistente.")
                         print(f"DEBUG: Resposta recebida do QASystem sem conteúdo 'resposta': {resposta}")
                     else:
                         st.error("Erro ao obter resposta. Verifique os logs do servidor.")
-                        # Adicionar mensagem de erro ao chat para o usuário
                         st.session_state.messages.append({
                             "role": "assistant",
                             "content": "Desculpe, não consegui processar sua pergunta no momento."

@@ -287,7 +287,7 @@ def cadastrar_ecommerce(nome: str, categoria: str, descricao: str, faixa_preco: 
 def listar_ecommerces():
 
     colecao = conecta_ecommerce()
-    if colecao is None: # Verificação correta para o objeto de coleção
+    if colecao is None:
         print("❌ Erro ao listar e-commerces: Falha na conexão com o banco de dados.")
         return None
 
@@ -297,7 +297,6 @@ def listar_ecommerces():
         for ecom_doc in colecao.find().sort("nome"):
             lista_de_ecommerces.append(ecom_doc)
         
-        # Opcional: imprimir no console para depuração
         print(f"\n✅ {len(lista_de_ecommerces)} e-commerces listados do banco.")
             
         return lista_de_ecommerces
@@ -348,14 +347,12 @@ def atualizar_ecommerce(id_ecommerce_str: str, dados_para_atualizar: dict) -> bo
 
     if not dados_para_atualizar or not isinstance(dados_para_atualizar, dict):
         print("⚠️ Nenhum dado fornecido para atualização do e-commerce.")
-        # Considerar se retornar True (nenhuma operação necessária) ou False (falha)
         return False 
 
     try:
         obj_id = ObjectId(id_ecommerce_str) # Converte o ID string para ObjectId
 
-        # Adiciona/atualiza o timestamp de 'updated_at'
-        dados_para_atualizar['updated_at'] = datetime.datetime.now(datetime.timezone.utc) # Usando a correção para UTC
+        dados_para_atualizar['updated_at'] = datetime.datetime.now(datetime.timezone.utc)
 
         resultado = colecao.update_one(
             {"_id": obj_id},
@@ -368,7 +365,7 @@ def atualizar_ecommerce(id_ecommerce_str: str, dados_para_atualizar: dict) -> bo
         elif resultado.matched_count > 0 and resultado.modified_count == 0:
             # Encontrou o documento, mas nada foi alterado (os novos valores podem ser iguais aos antigos)
             print(f"⚠️ E-commerce com ID {id_ecommerce_str} encontrado, mas nenhum dado foi efetivamente alterado.")
-            return True # Ou False, dependendo se "nenhuma alteração" é um sucesso ou não
+            return True
         else:
             # Não encontrou nenhum documento com o ID fornecido
             print(f"❌ Nenhum e-commerce encontrado com ID {id_ecommerce_str} para atualizar.")
@@ -396,7 +393,6 @@ def deletar_ecommerce(id_ecommerce_str: str) -> bool:
     try:
         obj_id = ObjectId(id_ecommerce_str) # Converte a string do ID para ObjectId
 
-        # A confirmação interativa foi removida daqui.
         resultado = colecao.delete_one({"_id": obj_id})
 
         if resultado.deleted_count > 0:
